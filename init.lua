@@ -473,6 +473,26 @@ do
   -- - sr)'  - [S]urround [R]eplace [)] [']
   require('mini.surround').setup()
 
+  -- Align text on a character: press `ga` with a motion or selection, then the character.
+  --
+  -- - gaip=  - [G]o [A]lign [I]nner [P]aragraph on [=]
+  -- - Vjjga: - Align the selected lines on [:]
+  -- - gA     - Same as `ga`, with a live preview (<CR> to accept)
+  --
+  -- `=` trims old padding and aligns with single spaces out of the box. `:` is set up below to do the same,
+  -- splitting only on the first colon and writing `key   : value` (the style GymPare's ESLint `key-spacing` uses).
+  local align = require 'mini.align'
+  align.setup {
+    modifiers = {
+      [':'] = function(steps, opts)
+        opts.split_pattern = ':'
+        table.insert(steps.pre_justify, align.gen_step.filter 'n == 1')
+        table.insert(steps.pre_justify, align.gen_step.trim('both', 'keep'))
+        opts.merge_delimiter = { '', ' ' }
+      end,
+    },
+  }
+
   -- Simple and easy statusline.
   --  You could remove this setup call if you don't like it,
   --  and try some other statusline plugin
@@ -541,6 +561,14 @@ do
     --   },
     -- },
     -- pickers = {}
+    defaults = {
+      mappings = {
+        -- Send the picker's results to Trouble (replaces the default "open in new tab").
+        -- Trouble is set up later, in lua/custom/plugins/trouble.lua, so require it lazily.
+        i = { ['<c-t>'] = function(...) return require('trouble.sources.telescope').open(...) end },
+        n = { ['<c-t>'] = function(...) return require('trouble.sources.telescope').open(...) end },
+      },
+    },
     extensions = {
       ['ui-select'] = { require('telescope.themes').get_dropdown() },
     },
@@ -736,7 +764,8 @@ do
     -- clangd = {},
     -- gopls = {},
     -- pyright = {},
-    -- tsc = {},
+    tsc = {},
+    eslint = {}, -- Only attaches in projects with an ESLint config; see lua/custom/plugins/eslint.lua
     --
     -- Some languages (like rust) have entire language plugins that can be useful:
     --    https://github.com/mrcjkb/rustaceanvim
@@ -826,7 +855,7 @@ do
     format_on_save = function(bufnr)
       -- You can specify filetypes to autoformat on save here:
       local enabled_filetypes = {
-        -- lua = true,
+        lua = true,
         -- python = true,
       }
       if enabled_filetypes[vim.bo[bufnr].filetype] then
@@ -840,12 +869,18 @@ do
     },
     -- You can also specify external formatters in here.
     formatters_by_ft = {
+      lua = { 'stylua' },
       -- rust = { 'rustfmt' },
       -- Conform can also run multiple formatters sequentially
       -- python = { "isort", "black" },
       --
       -- You can use 'stop_after_first' to run the first available formatter from the list
-      -- javascript = { "prettierd", "prettier", stop_after_first = true },
+      json = { 'prettierd', 'prettier', stop_after_first = true },
+      graphql = { 'prettierd', 'prettier', stop_after_first = true },
+      javascript = { 'prettierd', 'prettier', stop_after_first = true },
+      javascriptreact = { 'prettierd', 'prettier', stop_after_first = true },
+      typescript = { 'prettierd', 'prettier', stop_after_first = true },
+      typescriptreact = { 'prettierd', 'prettier', stop_after_first = true },
     },
   }
 
@@ -1018,12 +1053,12 @@ do
   -- require 'kickstart.plugins.indent_line'
   -- require 'kickstart.plugins.lint'
   -- require 'kickstart.plugins.autopairs'
-  -- require 'kickstart.plugins.neo-tree'
+  require 'kickstart.plugins.neo-tree'
 
   -- NOTE: You can add your own plugins, configuration, etc. in `lua/custom/plugins/*.lua`.
   --
   -- For independent modules, uncomment the convenience loader:
-  -- require 'custom.plugins'
+  require 'custom.plugins'
   --
   -- `custom.plugins` automatically loads files from that directory, but their
   -- order is unspecified. If plugins depend on each other, keep them in the same
